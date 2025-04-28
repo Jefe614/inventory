@@ -1,0 +1,180 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <h1 class="h2 fw-bold text-dark mb-4">Reports</h1>
+
+    <!-- Inventory Summary -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-bottom">
+            <h5 class="card-title mb-0"><i class="bi bi-box me-2"></i>Inventory Summary</h5>
+        </div>
+        <div class="card-body">
+            <div class="d-flex justify-content-between mb-3">
+                <div>
+                    <p><strong>Total Stock:</strong> {{ total_stock }} Kg</p>
+                    <p><strong>Total Value:</strong> ${{ total_inventory_value|floatformat:2 }}</p>
+                </div>
+                <div>
+                    <a href="{% url 'export_report' 'inventory' 'pdf' %}" class="btn btn-sm btn-outline-danger me-2"><i class="bi bi-file-earmark-pdf"></i> PDF</a>
+                    <a href="{% url 'export_report' 'inventory' 'excel' %}" class="btn btn-sm btn-outline-success"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Quantity</th>
+                            <th>Price</th>
+                            <th>Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in products_with_value %}
+                        <tr>
+                            <td>{{ product.name }}</td>
+                            <td>{{ product.quantity }} Kg</td>
+                            <td>${{ product.price }}</td>
+                            <td>${{ product.value|floatformat:2 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center">No products available.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sales Summary -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-bottom">
+            <h5 class="card-title mb-0"><i class="bi bi-cart-check me-2"></i>Sales Summary (Last 30 Days)</h5>
+        </div>
+        <div class="card-body">
+            <div class="d-flex justify-content-end mb-3">
+                <a href="{% url 'export_report' 'sales' 'pdf' %}" class="btn btn-sm btn-outline-danger me-2"><i class="bi bi-file-earmark-pdf"></i> PDF</a>
+                <a href="{% url 'export_report' 'sales' 'excel' %}" class="btn btn-sm btn-outline-success"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Stage</th>
+                            <th>Total Quantity (Kg)</th>
+                            <th>Total Orders</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sale in sales_summary %}
+                        <tr>
+                            <td>{{ sale.stage }}</td>
+                            <td>{{ sale.total_quantity|default:0 }} Kg</td>
+                            <td>{{ sale.total_orders }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center">No sales recorded.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Purchase Summary -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-bottom">
+            <h5 class="card-title mb-0"><i class="bi bi-cart-plus me-2"></i>Purchase Summary (Last 30 Days)</h5>
+        </div>
+        <div class="card-body">
+            <div class="d-flex justify-content-end mb-3">
+                <a href="{% url 'export_report' 'purchases' 'pdf' %}" class="btn btn-sm btn-outline-danger me-2"><i class="bi bi-file-earmark-pdf"></i> PDF</a>
+                <a href="{% url 'export_report' 'purchases' 'excel' %}" class="btn btn-sm btn-outline-success"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Total Quantity (Kg)</th>
+                            <th>Total Orders</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for purchase in purchase_summary %}
+                        <tr>
+                            <td>{{ purchase.product__name }}</td>
+                            <td>{{ purchase.total_quantity }} Kg</td>
+                            <td>{{ purchase.total_orders }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center">No purchases recorded.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Low-Stock and Fast-Moving Products -->
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="card-title mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Low-Stock Products</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-end mb-3">
+                        <a href="{% url 'export_report' 'low_stock' 'pdf' %}" class="btn btn-sm btn-outline-danger me-2"><i class="bi bi-file-earmark-pdf"></i> PDF</a>
+                        <a href="{% url 'export_report' 'low_stock' 'excel' %}" class="btn btn-sm btn-outline-success"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+                    </div>
+                    <div class="list-group">
+                        {% for product in low_stock_products %}
+                        <a href="{% url 'product_edit' product.pk %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center alert-low-stock">
+                            {{ product.name }}
+                            <span class="badge bg-danger rounded-pill">{{ product.quantity }} left</span>
+                        </a>
+                        {% empty %}
+                        <div class="alert alert-success">
+                            <i class="bi bi-check-circle"></i> No low stock alerts
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="card-title mb-0"><i class="bi bi-rocket-takeoff me-2"></i>Fast-Moving Products</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-end mb-3">
+                        <a href="{% url 'export_report' 'fast_moving' 'pdf' %}" class="btn btn-sm btn-outline-danger me-2"><i class="bi bi-file-earmark-pdf"></i> PDF</a>
+                        <a href="{% url 'export_report' 'fast_moving' 'excel' %}" class="btn btn-sm btn-outline-success"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+                    </div>
+                    <div class="list-group">
+                        {% for product in fast_moving_products %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            {{ product.product__name }}
+                            <span class="badge bg-primary rounded-pill">{{ product.total_sold }} Kg</span>
+                        </div>
+                        {% empty %}
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> No fast-moving products.
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

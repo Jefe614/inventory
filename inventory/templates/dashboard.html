@@ -1,0 +1,360 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2 fw-bold text-dark">Dashboard</h1>
+        {% if perms.inventory.add_product %}
+        <a href="{% url 'product_add' %}" class="btn btn-primary btn-sm shadow-sm">
+            <i class="bi bi-plus-circle"></i> Add Product
+        </a>
+        {% endif %}
+    </div>
+
+    <!-- Key Metrics -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm bg-gradient-primary text-white">
+                <div class="card-body text-center">
+                    <i class="bi bi-wallet display-4 opacity-75"></i>
+                    <h6 class="card-title mt-2">Total Inventory Value</h6>
+                    <h3 class="fw-bold mb-0">${{ total_inventory_value|floatformat:2 }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm bg-gradient-success text-white">
+                <div class="card-body text-center">
+                    <i class="bi bi-cart-check display-4 opacity-75"></i>
+                    <h6 class="card-title mt-2">Total Sales</h6>
+                    <h3 class="fw-bold mb-0">{{ total_sales_quantity }} Kg</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm bg-gradient-info text-white">
+                <div class="card-body text-center">
+                    <i class="bi bi-cart-plus display-4 opacity-75"></i>
+                    <h6 class="card-title mt-2">Total Purchases</h6>
+                    <h3 class="fw-bold mb-0">{{ total_purchases_quantity }} Kg</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="row g-4">
+        <!-- Left Column: Trends and Low Stock -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0"><i class="bi bi-bar-chart me-2"></i>Sales & Purchase Trends</h5>
+                    <small class="text-muted">Last 30 days</small>
+                </div>
+                <div class="card-body p-2">
+                    <canvas id="trendsChart" height="220"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Top Products -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="card-title mb-0"><i class="bi bi-star me-2"></i>Top Products</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <h6 class="fw-bold mb-3">Top 5 by Stock</h6>
+                        {% if top_products_by_stock %}
+                        <ul class="list-group list-group-flush">
+                            {% for product in top_products_by_stock %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-0">
+                                <span class="text-truncate" style="max-width: 150px;">{{ product.name }}</span>
+                                <span class="badge bg-primary rounded-pill">{{ product.quantity }} Kg</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <p class="text-muted">No products available.</p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <h6 class="fw-bold mb-3">Top 5 by Sales</h6>
+                        {% if top_products_by_sales %}
+                        <ul class="list-group list-group-flush">
+                            {% for product in top_products_by_sales %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-0">
+                                <span class="text-truncate" style="max-width: 150px;">{{ product.product__name }}</span>
+                                <span class="badge bg-success rounded-pill">{{ product.total_sold }} Kg</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <p class="text-muted">No sales recorded.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Low Stock Alerts -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Low Stock Alerts</h5>
+                    <span class="badge bg-danger">{{ low_stock_products|length }}</span>
+                </div>
+                <div class="card-body p-0">
+                    {% if low_stock_products %}
+                    <div class="list-group list-group-flush">
+                        {% for product in low_stock_products %}
+                        <a href="{% url 'product_edit' product.pk %}" 
+                           class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-2 px-3 alert-low-stock">
+                            <div>
+                                <strong>{{ product.name }}</strong>
+                                <small class="d-block text-muted">Threshold: {{ product.low_stock_threshold }} Kg</small>
+                            </div>
+                            <span class="badge bg-danger rounded-pill">{{ product.quantity }} Kg left</span>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="alert alert-success m-3">
+                        <i class="bi bi-check-circle"></i> No low stock alerts
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Inventory Summary -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="card-title mb-0"><i class="bi bi-box me-2"></i>Inventory Summary</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Stock</th>
+                                    <th>Price</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for product in products %}
+                                <tr>
+                                    <td class="text-truncate" style="max-width: 120px;">{{ product.name }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="progress flex-grow-1" style="height: 20px;">
+                                                {% widthratio product.quantity product.low_stock_threshold|add:10 100 as progress %}
+                                                <div class="progress-bar {% if product.is_low_stock %}bg-danger{% else %}bg-success{% endif %}" 
+                                                     role="progressbar" style="width: {{ progress }}%" 
+                                                     aria-valuenow="{{ product.quantity }}" 
+                                                     aria-valuemin="0" 
+                                                     aria-valuemax="{{ product.low_stock_threshold|add:10 }}">
+                                                </div>
+                                            </div>
+                                            <small class="ms-2">{{ product.quantity }} Kg</small>
+                                        </div>
+                                    </td>
+                                    <td>${{ product.price }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center py-3">No products available.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="row g-4 mt-4">
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0"><i class="bi bi-cart-plus me-2"></i>Recent Purchases</h5>
+                    <a href="{% url 'purchase_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    {% if recent_purchases %}
+                    <div class="list-group list-group-flush">
+                        {% for purchase in recent_purchases %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+                            <div>
+                                <strong>{{ purchase.quantity }} Kg</strong> of {{ purchase.product.name }}
+                                <div class="text-muted small">
+                                    From {{ purchase.supplier.name }} • {{ purchase.date_ordered|date:"M d, H:i" }}
+                                </div>
+                            </div>
+                            <span class="badge bg-secondary">${{ purchase.total_price|floatformat:2 }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info m-3">
+                        <i class="bi bi-info-circle"></i> No recent purchases.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0"><i class="bi bi-cart-check me-2"></i>Recent Sales</h5>
+                    <a href="{% url 'sales_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    {% if recent_sales %}
+                    <div class="list-group list-group-flush">
+                        {% for sale in recent_sales %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+                            <div>
+                                <strong>{{ sale.quantity }} Kg</strong> of {{ sale.product.name }}
+                                <div class="text-muted small">
+                                    {{ sale.date_sold|date:"M d, H:i" }}
+                                </div>
+                            </div>
+                            <span class="badge bg-{% if sale.stage == 'Approved' %}success{% elif sale.stage == 'Rejected' %}danger{% elif sale.stage == 'Processing' %}warning{% else %}secondary{% endif %}">
+                                {{ sale.stage }}
+                            </span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info m-3">
+                        <i class="bi bi-info-circle"></i> No recent sales.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Trends Chart
+        const ctx = document.getElementById('trendsChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: {{ chart_labels|safe }},
+                datasets: [
+                    {
+                        label: 'Sales (Kg)',
+                        data: {{ chart_sales_data|safe }},
+                        borderColor: '#dc3545',
+                        backgroundColor: 'rgba(220, 53, 69, 0.05)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3
+                    },
+                    {
+                        label: 'Purchases (Kg)',
+                        data: {{ chart_purchases_data|safe }},
+                        borderColor: '#0d6efd',
+                        backgroundColor: 'rgba(13, 110, 253, 0.05)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            boxWidth: 12,
+                            padding: 20
+                        }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            drawBorder: false
+                        },
+                        ticks: {
+                            precision: 0
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                },
+                elements: {
+                    point: {
+                        radius: 3,
+                        hoverRadius: 5
+                    }
+                }
+            }
+        });
+    });
+</script>
+<style>
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #0d6efd 0%, #6610f2 100%);
+    }
+    .bg-gradient-success {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    }
+    .bg-gradient-info {
+        background: linear-gradient(135deg, #17a2b8 0%, #6610f2 100%);
+    }
+    .card {
+        transition: transform 0.2s, box-shadow 0.2s;
+        border-radius: 0.5rem;
+    }
+    .card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1) !important;
+    }
+    .alert-low-stock {
+        background-color: rgba(220, 53, 69, 0.05);
+        border-left: 3px solid #dc3545;
+    }
+    .alert-low-stock:hover {
+        background-color: rgba(220, 53, 69, 0.1);
+    }
+    .progress {
+        border-radius: 10px;
+        background-color: #e9ecef;
+    }
+    .progress-bar {
+        border-radius: 10px;
+    }
+    .list-group-item {
+        transition: background-color 0.2s;
+    }
+    .text-truncate {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+</style>
+{% endblock %}
+{% endblock %}

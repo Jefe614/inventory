@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        <h4><i class="bi bi-cart-plus"></i> Purchase Orders</h4>
+    </div>
+    <div class="card-body">
+        <div class="d-flex justify-content-between mb-3">
+            <h5>Purchase History</h5>
+            <a href="{% url 'purchase_add' %}" class="btn btn-primary"><i class="bi bi-plus"></i> Add Purchase</a>
+        </div>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Supplier</th>
+                    <th>Product</th>
+                    <th>Quantity</th>
+                    <th>Date Ordered</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for purchase in purchases %}
+                <tr>
+                    <td>{{ purchase.supplier.name }}</td>
+                    <td>{{ purchase.product.name }}</td>
+                    <td>{{ purchase.quantity }}</td>
+                    <td>{{ purchase.date_ordered|date:"Y-m-d H:i" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="text-center">No purchase orders found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

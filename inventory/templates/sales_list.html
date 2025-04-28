@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        <h4><i class="bi bi-cart-check"></i> Sales Orders</h4>
+    </div>
+    <div class="card-body">
+        <div class="d-flex justify-content-between mb-3">
+            <h5>Sales History</h5>
+            {% if perms.inventory.add_salesorder %}
+            <a href="{% url 'sales_add' %}" class="btn btn-primary"><i class="bi bi-plus"></i> Add Sale</a>
+            {% endif %}
+        </div>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Quantity</th>
+                    <th>Stage</th>
+                    <th>Date Sold</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sale in sales %}
+                <tr>
+                    <td>{{ sale.product.name }}</td>
+                    <td>{{ sale.quantity }} Kg</td>
+                    <td>
+                        <form method="post" action="{% url 'sales_update_stage' sale.pk %}" class="d-inline">
+                            {% csrf_token %}
+                            <select name="stage" class="form-select form-select-sm" onchange="this.form.submit()">
+                                {% for stage, label in sale.STAGE_CHOICES %}
+                                <option value="{{ stage }}" {% if sale.stage == stage %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </form>
+                    </td>
+                    <td>{{ sale.date_sold|date:"Y-m-d H:i" }}</td>
+                    <td>
+                        {% if perms.inventory.add_salesorder %}
+                        <a href="{% url 'sales_edit' sale.pk %}" class="btn btn-sm btn-warning"><i class="bi bi-pencil"></i></a>
+                        <a href="{% url 'sales_delete' sale.pk %}" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?')"><i class="bi bi-trash"></i></a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center">No sales orders found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
