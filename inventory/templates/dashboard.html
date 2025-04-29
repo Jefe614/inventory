@@ -18,7 +18,7 @@
                 <div class="card-body text-center">
                     <i class="bi bi-wallet display-4 opacity-75"></i>
                     <h6 class="card-title mt-2">Total Inventory Value</h6>
-                    <h3 class="fw-bold mb-0">${{ total_inventory_value|floatformat:2 }}</h3>
+                    <h3 class="fw-bold mb-0">Ksh{{ total_inventory_value|floatformat:2 }}</h3>
                 </div>
             </div>
         </div>
@@ -162,7 +162,7 @@
                                             <small class="ms-2">{{ product.quantity }} Kg</small>
                                         </div>
                                     </td>
-                                    <td>${{ product.price }}</td>
+                                    <td>Ksh{{ product.price }}</td>
                                 </tr>
                                 {% empty %}
                                 <tr>
@@ -196,7 +196,7 @@
                                     From {{ purchase.supplier.name }} • {{ purchase.date_ordered|date:"M d, H:i" }}
                                 </div>
                             </div>
-                            <span class="badge bg-secondary">${{ purchase.total_price|floatformat:2 }}</span>
+                            <span class="badge bg-secondary">Ksh{{ purchase.total_price|floatformat:2 }}</span>
                         </div>
                         {% endfor %}
                     </div>
